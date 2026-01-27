@@ -10,18 +10,16 @@
 #include <stb_image.h>
 #include <string>
 
-#include "glm/common.hpp"
-#include "glm/ext/matrix_clip_space.hpp"
+#include "camera.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/vector_float3.hpp"
-#include "glm/geometric.hpp"
+#include "glm/fwd.hpp"
 #include "glm/trigonometric.hpp"
 #include "shader.hpp"
 
 void framebuffer_size_callback(GLFWwindow* window, int w, int h);
-void processInput(GLFWwindow* window, int& key_pressed);
-void calculate_direction(glm::vec3* direction, float yaw, float pitch);
+void processInput(GLFWwindow* window, Camera* camera);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xpos, double ypos);
 
@@ -29,31 +27,10 @@ const int W_WIDTH = 800;
 const int W_HEIGHT = 600;
 const char* W_NAME = "Test";
 
-// CAMERA
-glm::vec3 camera_pos = glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 camera_direction = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 camera_up = glm::vec3(0.0f, 1.0f, 0.0f);
-
-glm::vec3 direction = glm::vec3(0.0f, 0.0f, 0.0f);
-float yaw = -90.0f;
-float pitch = 0.0f;
-float camera_fov = 60.0f;
-
-const float PITCH_MAX = 89.0f;
-const float PITCH_MIN = -89.0f;
-const float FOV_MAX = 90.0f;
-const float FOV_MIN = 30.0f;
-
-const float CAMERA_SPEED = 2.5f;
-
 // MOUSE
 float last_mouse_X = (float) W_WIDTH / 2;
 float last_mouse_Y = (float) W_HEIGHT / 2;
 bool mouse_entered = false;
-
-// Y usually has less mouse sensitivity
-const float MOUSE_SENSITIVITY_X = 0.05f;
-const float MOUSE_SENSITIVITY_Y = 0.03f;
 
 // DELTA TIME
 float delta_time = 0.0f;
@@ -75,6 +52,14 @@ int main()
         return -1;
     }
     glfwMakeContextCurrent(window);
+
+    Camera* camera = new Camera();
+    camera->camera_width = (float) W_WIDTH;
+    camera->camera_height = (float) W_HEIGHT;
+    camera->camera_position = glm::vec3(0.0f, 0.0f, 3.0f);
+
+    glfwSetWindowUserPointer(window, camera);
+
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouse_callback);
@@ -180,12 +165,6 @@ int main()
                                  glm::vec3(1.5f, 0.2f, -1.5f),
                                  glm::vec3(-1.3f, 1.0f, -1.5f)};
 
-    const float C_FOV = 60.0f;
-    const float C_WIDTH = 800.0f;
-    const float C_HEIGHT = 600.0f;
-    const float C_NEAR = 0.1f;
-    const float C_FAR = 100.0f;
-
     while (!glfwWindowShouldClose(window))
     {
         float current_frame = glfwGetTime();
@@ -193,19 +172,14 @@ int main()
         last_frame = current_frame;
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        int key_pressed;
-        processInput(window, key_pressed);
+        processInput(window, camera);
 
         shader.use();
 
-        glm::mat4 view;
-        glm::vec3 camera_target = camera_pos + camera_direction;
-        view = glm::lookAt(camera_pos, camera_target, camera_up);
-
+        glm::mat4 view = camera->get_view_matrix();
         shader.setMat4("view", view);
 
-        glm::mat4 projection;
-        projection = glm::perspective(glm::radians(camera_fov), C_WIDTH / C_HEIGHT, C_NEAR, C_FAR);
+        glm::mat4 projection = camera->get_projection_matrix();
         shader.setMat4("projection", projection);
 
         glActiveTexture(GL_TEXTURE0);
@@ -248,48 +222,38 @@ void framebuffer_size_callback(GLFWwindow* window, int w, int h)
     glViewport(0, 0, w, h);
 }
 
-void processInput(GLFWwindow* window, int& key_pressed)
+void processInput(GLFWwindow* window, Camera* camera)
 {
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
     {
         glfwSetWindowShouldClose(window, true);
     }
 
-    glm::vec3 camera_movement = glm::vec3(0.0f, 0.0f, 0.0f);
-
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
     {
-        camera_movement += camera_direction;
+        camera->process_keyboard(FORWARD, delta_time);
     }
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
     {
-        camera_movement += -camera_direction;
+        camera->process_keyboard(BACKWARD, delta_time);
     }
 
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
     {
-        camera_movement += -glm::normalize(glm::cross(camera_direction, camera_up));
+        camera->process_keyboard(LEFT, delta_time);
     }
 
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
     {
-        camera_movement += glm::normalize(glm::cross(camera_direction, camera_up));
+        camera->process_keyboard(RIGHT, delta_time);
     }
-
-    camera_movement *= CAMERA_SPEED * delta_time;
-    camera_pos += camera_movement;
-}
-
-void calculate_direction(glm::vec3* direction, float yaw, float pitch)
-{
-    direction->x = glm::cos(glm::radians(yaw));
-    direction->y = glm::sin(glm::radians(pitch));
-    direction->z = glm::sin(glm::radians(yaw));
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
+    Camera* camera = static_cast<Camera*>(glfwGetWindowUserPointer(window));
+
     if (!mouse_entered)
     {
         mouse_entered = true;
@@ -299,25 +263,15 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
     float x_offset = xpos - last_mouse_X;
     float y_offset = last_mouse_Y - ypos;
+
     last_mouse_X = xpos;
     last_mouse_Y = ypos;
 
-    x_offset *= MOUSE_SENSITIVITY_X;
-    y_offset *= MOUSE_SENSITIVITY_Y;
-
-    yaw += x_offset;
-    pitch += y_offset;
-
-    pitch = glm::min(pitch, PITCH_MAX);
-    pitch = glm::max(pitch, PITCH_MIN);
-
-    calculate_direction(&direction, yaw, pitch);
-    camera_direction = glm::normalize(direction);
+    camera->process_mouse_movement(x_offset, y_offset);
 }
 
 void scroll_callback(GLFWwindow* window, double x_offset, double y_offset)
 {
-    camera_fov -= (float) y_offset;
-    camera_fov = glm::min(camera_fov, FOV_MAX);
-    camera_fov = glm::max(camera_fov, FOV_MIN);
+    Camera* camera = static_cast<Camera*>(glfwGetWindowUserPointer(window));
+    camera->process_mouse_scroll(y_offset);
 }
