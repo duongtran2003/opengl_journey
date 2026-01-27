@@ -3,7 +3,7 @@ CompileFlags:
     - -Wall
     - -Wextra
     - -Wpedantic
-    - -std=c++20
+    - -std=c++17
   Remove:
     - -Werror
   CompilationDatabase: build
@@ -17,7 +17,6 @@ Completion:
   ArgumentLists: FullPlaceholders
   HeaderInsertion: IWYU
   CodePatterns: All
-  MacroFilter: ExactPrefix
 
 Index:
   Background: Build
