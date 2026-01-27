@@ -1,0 +1,59 @@
+BasedOnStyle: LLVM
+Language: Cpp
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 8
+
+# Line length
+ColumnLimit: 120
+
+# Braces (Allman)
+BreakBeforeBraces: Allman
+AllowShortBlocksOnASingleLine: Never
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: InlineOnly
+
+# Function declarations & calls
+BinPackParameters: false
+BinPackArguments: false
+AllowAllParametersOfDeclarationOnNextLine: false
+
+# Pointers & references
+PointerAlignment: Left
+ReferenceAlignment: Pointer
+
+# Spaces
+SpaceBeforeParens: ControlStatements
+SpacesInAngles: false
+SpaceAfterCStyleCast: true
+
+# Includes
+SortIncludes: true
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<.*>'
+    Priority: 1
+  - Regex: '^".*"'
+    Priority: 2
+
+# Namespaces
+NamespaceIndentation: All
+FixNamespaceComments: true
+
+# Modern C++
+Cpp11BracedListStyle: true
+AllowAllConstructorInitializersOnNextLine: false
+ConstructorInitializerIndentWidth: 4
+BreakConstructorInitializers: AfterColon
+
+# Comments
+ReflowComments: true
+AlignTrailingComments: true
+
+# Misc
+AlwaysBreakTemplateDeclarations: Yes
+BreakInheritanceList: AfterColon
