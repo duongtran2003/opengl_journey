@@ -1,23 +1,23 @@
+#include <GLFW/glfw3.h>
 #include <cmath>
 #include <cstddef>
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 #include <ostream>
+#include <stb_image.h>
+#include <string>
+
 #include "glm/common.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_transform.hpp"
-#include "glm/ext/quaternion_geometric.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/geometric.hpp"
 #include "glm/trigonometric.hpp"
 #include "shader.h"
-#include "stb_image.h"
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <string>
 
 void framebuffer_size_callback(GLFWwindow* window, int w, int h);
 void processInput(GLFWwindow* window, int& key_pressed);
@@ -47,8 +47,8 @@ const float FOV_MIN = 30.0f;
 const float CAMERA_SPEED = 2.5f;
 
 // MOUSE
-float last_mouse_X = (float)W_WIDTH / 2;
-float last_mouse_Y = (float)W_HEIGHT / 2;
+float last_mouse_X = (float) W_WIDTH / 2;
+float last_mouse_Y = (float) W_HEIGHT / 2;
 bool mouse_entered = false;
 
 // Y usually has less mouse sensitivity
@@ -80,7 +80,7 @@ int main()
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
     {
         std::cout << "Failed to initiate GLAD" << std::endl;
         return -1;
@@ -92,29 +92,24 @@ int main()
     // Getting shader ready
     Shader shader("./src/shaders/vertex.glsl", "./src/shaders/fragment.glsl");
 
-    float vertices[] = {-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 0.0f,
-                        0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
-                        -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+    float vertices[] = {
+            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
+            0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
 
-                        -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
-                        0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-                        -0.5f, 0.5f,  0.5f,  0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f,
+            -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 1.0f, -0.5f, 0.5f,  0.5f,  0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f,
 
-                        -0.5f, 0.5f,  0.5f,  1.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 1.0f, 1.0f,
-                        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-                        -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  0.5f,  1.0f, 0.0f,
+            -0.5f, 0.5f,  0.5f,  1.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 1.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  0.5f,  1.0f, 0.0f,
 
-                        0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
-                        0.5f,  -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 0.0f, 1.0f,
-                        0.5f,  -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 0.0f, 1.0f,
+            0.5f,  -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 
-                        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 1.0f,
-                        0.5f,  -0.5f, 0.5f,  1.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
-                        -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 1.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
+            0.5f,  -0.5f, 0.5f,  1.0f, 0.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
 
-                        -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
-                        0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-                        -0.5f, 0.5f,  0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f};
+            -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, -0.5f, 0.5f,  0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f};
 
     unsigned int VBO, VAO;
     glGenBuffers(1, &VBO);
@@ -124,10 +119,10 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) 0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) (3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     // Unbind
@@ -148,8 +143,7 @@ int main()
     stbi_set_flip_vertically_on_load(true);
 
     int width, height, nrChannels;
-    unsigned char* data =
-        stbi_load("./src/resources/textures/container.jpg", &width, &height, &nrChannels, 0);
+    unsigned char* data = stbi_load("./src/resources/textures/container.jpg", &width, &height, &nrChannels, 0);
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
@@ -175,11 +169,16 @@ int main()
     shader.setInt("texture1", 0);
     shader.setInt("texture2", 1);
 
-    glm::vec3 cubePositions[] = {glm::vec3(0.0f, 0.0f, 0.0f),    glm::vec3(2.0f, 5.0f, -15.0f),
-                                 glm::vec3(-1.5f, -2.2f, -2.5f), glm::vec3(-3.8f, -2.0f, -12.3f),
-                                 glm::vec3(2.4f, -0.4f, -3.5f),  glm::vec3(-1.7f, 3.0f, -7.5f),
-                                 glm::vec3(1.3f, -2.0f, -2.5f),  glm::vec3(1.5f, 2.0f, -2.5f),
-                                 glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f)};
+    glm::vec3 cubePositions[] = {glm::vec3(0.0f, 0.0f, 0.0f),
+                                 glm::vec3(2.0f, 5.0f, -15.0f),
+                                 glm::vec3(-1.5f, -2.2f, -2.5f),
+                                 glm::vec3(-3.8f, -2.0f, -12.3f),
+                                 glm::vec3(2.4f, -0.4f, -3.5f),
+                                 glm::vec3(-1.7f, 3.0f, -7.5f),
+                                 glm::vec3(1.3f, -2.0f, -2.5f),
+                                 glm::vec3(1.5f, 2.0f, -2.5f),
+                                 glm::vec3(1.5f, 0.2f, -1.5f),
+                                 glm::vec3(-1.3f, 1.0f, -1.5f)};
 
     const float C_FOV = 60.0f;
     const float C_WIDTH = 800.0f;
@@ -225,7 +224,7 @@ int main()
             const float CUBE_ROTATION_SPEED = 100.0f;
             if (i % 3 == 0)
             {
-                angle += (float)glfwGetTime() * CUBE_ROTATION_SPEED;
+                angle += (float) glfwGetTime() * CUBE_ROTATION_SPEED;
             }
             model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 
@@ -244,7 +243,10 @@ int main()
     return 0;
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int w, int h) { glViewport(0, 0, w, h); }
+void framebuffer_size_callback(GLFWwindow* window, int w, int h)
+{
+    glViewport(0, 0, w, h);
+}
 
 void processInput(GLFWwindow* window, int& key_pressed)
 {
@@ -315,7 +317,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
 void scroll_callback(GLFWwindow* window, double x_offset, double y_offset)
 {
-    camera_fov -= (float)y_offset;
+    camera_fov -= (float) y_offset;
     camera_fov = glm::min(camera_fov, FOV_MAX);
     camera_fov = glm::max(camera_fov, FOV_MIN);
 }
