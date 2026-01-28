@@ -51,6 +51,7 @@ class Camera
 
     const glm::mat4 get_view_matrix();
     const glm::mat4 get_projection_matrix();
+    void clamp_camera_to_ground();
     void process_keyboard(CameraMovement p_direction, float p_delta_time);
     void process_mouse_movement(float p_x_offset, float p_y_offset, GLboolean p_constrain_pitch = true);
     void process_mouse_scroll(float p_y_offset);

@@ -90,6 +90,11 @@ const glm::mat4 Camera::get_projection_matrix()
     return glm::perspective(glm::radians(fov), camera_width / camera_height, camera_near_plane, camera_far_plane);
 }
 
+void Camera::clamp_camera_to_ground()
+{
+    camera_position.y = 0.0f;
+}
+
 void Camera::process_keyboard(CameraMovement p_direction, float p_delta_time)
 {
     float velocity = movement_speed * p_delta_time;
@@ -110,6 +115,8 @@ void Camera::process_keyboard(CameraMovement p_direction, float p_delta_time)
     {
         camera_position += camera_right * velocity;
     }
+
+    clamp_camera_to_ground();
 }
 
 void Camera::process_mouse_movement(float p_x_offset, float p_y_offset, GLboolean p_constrain_pitch)
