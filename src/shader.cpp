@@ -8,7 +8,9 @@
 #include <sstream>
 #include <string>
 
+#include "glm/ext/matrix_float3x3.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
+#include "glm/ext/vector_float3.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
 Shader::Shader(const char* vertexPath, const char* fragmentPath)
@@ -102,6 +104,18 @@ void Shader::setInt(const std::string& name, int value) const
 void Shader::setFloat(const std::string& name, float value) const
 {
     glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
+}
+
+void Shader::setVec3(const std::string& name, glm::vec3 value) const
+{
+    int uniformLoc = glGetUniformLocation(ID, name.c_str());
+    glUniform3fv(uniformLoc, 1, glm::value_ptr(value));
+}
+
+void Shader::setMat3(const std::string& name, glm::mat3 value) const
+{
+    int uniformLoc = glGetUniformLocation(ID, name.c_str());
+    glUniformMatrix4fv(uniformLoc, 1, GL_FALSE, glm::value_ptr(value));
 }
 
 void Shader::setMat4(const std::string& name, glm::mat4 value) const
