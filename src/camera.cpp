@@ -116,7 +116,17 @@ void Camera::process_keyboard(CameraMovement p_direction, float p_delta_time)
         camera_position += camera_right * velocity;
     }
 
-    clamp_camera_to_ground();
+    if (p_direction == UP)
+    {
+        camera_position.y += world_up.y * velocity;
+    }
+
+    if (p_direction == DOWN)
+    {
+        camera_position.y += world_up.y * velocity * -1;
+    }
+
+    // clamp_camera_to_ground();
 }
 
 void Camera::process_mouse_movement(float p_x_offset, float p_y_offset, GLboolean p_constrain_pitch)

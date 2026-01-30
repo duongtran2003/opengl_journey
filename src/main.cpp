@@ -188,7 +188,7 @@ void framebuffer_size_callback(GLFWwindow* window, int w, int h)
 
 void processInput(GLFWwindow* window, Camera* camera)
 {
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_CAPS_LOCK) == GLFW_PRESS)
     {
         glfwSetWindowShouldClose(window, true);
     }
@@ -211,6 +211,16 @@ void processInput(GLFWwindow* window, Camera* camera)
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
     {
         camera->process_keyboard(RIGHT, delta_time);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    {
+        camera->process_keyboard(UP, delta_time);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+    {
+        camera->process_keyboard(DOWN, delta_time);
     }
 }
 
