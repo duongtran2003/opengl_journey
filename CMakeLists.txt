@@ -1,65 +1,35 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.15)
 
-project(opengl_learn
-    VERSION 0.1.0
-    LANGUAGES C CXX
-)
+project(learn_opengl LANGUAGES CXX C)
 
-# ---- Tooling ----
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# ---- Language standard ----
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 
-# ---- GLFW ----
 set(GLFW3_DIR "${CMAKE_SOURCE_DIR}/lib/cmake/glfw3")
 find_package(glfw3 CONFIG REQUIRED)
 
-# ---- GLAD ----
-file(GLOB GLAD_SOURCES CONFIGURE_DEPENDS
-    src/glad.c
+set(SRC_FILES
+    src/main.cpp
+    src/camera.cpp
+    src/shader.cpp
+    external/glad/glad.c
+    external/stb_image/stb_image.cpp
 )
 
-add_library(glad STATIC
-    ${GLAD_SOURCES}
+add_executable(main ${SRC_FILES})
+
+target_include_directories(main PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/external
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/glm
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/GLFW
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image
 )
 
-target_include_directories(glad
-    PUBLIC
-        ${CMAKE_SOURCE_DIR}/include
-)
+target_link_libraries(main PRIVATE glfw)
 
-# ---- Application (auto scan) ----
-file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS
-    src/*.cpp
-    src/*.c
-)
-
-add_executable(main
-    ${APP_SOURCES}
-)
-
-target_include_directories(main
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/src
-)
-
-# Prevent GLFW from including OpenGL headers
-target_compile_definitions(main
-    PRIVATE
-        GLFW_INCLUDE_NONE
-)
-
-target_link_libraries(main
-    PRIVATE
-        glad
-        glfw
-)
-
-# ---- Platform-specific OpenGL ----
 if (APPLE)
     target_link_libraries(main PRIVATE "-framework OpenGL")
 elseif (UNIX)
@@ -67,3 +37,6 @@ elseif (UNIX)
 elseif (WIN32)
     target_link_libraries(main PRIVATE opengl32)
 endif()
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/shaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

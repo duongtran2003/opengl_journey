@@ -1,4 +1,4 @@
-#include "camera.hpp"
+#include "learn_opengl/camera.hpp"
 
 #include "glm/common.hpp"
 #include "glm/ext/matrix_clip_space.hpp"

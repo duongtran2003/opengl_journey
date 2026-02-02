@@ -1,8 +1,8 @@
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
-#include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -11,13 +11,13 @@
 #include <stb_image.h>
 #include <string>
 
-#include "camera.hpp"
+#include "learn_opengl/camera.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/fwd.hpp"
 #include "glm/trigonometric.hpp"
-#include "shader.hpp"
+#include "learn_opengl/shader.hpp"
 
 void framebuffer_size_callback(GLFWwindow* window, int w, int h);
 void processInput(GLFWwindow* window, Camera* camera);
@@ -76,8 +76,8 @@ int main()
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
     // Getting shader ready
-    Shader shader("./src/shaders/vertex.glsl", "./src/shaders/fragment.glsl");
-    Shader light_shader("./src/shaders/light_vertex.glsl", "./src/shaders/light_fragment.glsl");
+    Shader shader("./shaders/vertex.glsl", "./shaders/fragment.glsl");
+    Shader light_shader("./shaders/light_vertex.glsl", "./shaders/light_fragment.glsl");
 
     float vertices[] = {-0.5f, -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f, 0.5f,  -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f,
                         0.5f,  0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f, 0.5f,  0.5f,  -0.5f, 0.0f,  0.0f,  -1.0f,
