@@ -11,12 +11,12 @@
 #include <stb_image.h>
 #include <string>
 
-#include "learn_opengl/camera.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/fwd.hpp"
 #include "glm/trigonometric.hpp"
+#include "learn_opengl/camera.hpp"
 #include "learn_opengl/shader.hpp"
 
 void framebuffer_size_callback(GLFWwindow* window, int w, int h);
@@ -153,6 +153,8 @@ int main()
 
         glm::mat4 model = glm::mat4(1.0f);
         shader.setMat4("model", model);
+
+        shader.setVec3("viewPos", camera->camera_position);
 
         glBindVertexArray(cube_VAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
