@@ -38,5 +38,18 @@ elseif (WIN32)
     target_link_libraries(main PRIVATE opengl32)
 endif()
 
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/shaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+add_custom_target(sync_shaders ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/shaders
+        ${CMAKE_CURRENT_BINARY_DIR}/shaders
+    COMMENT "copying all shaders to build directory"
+)
+
+add_custom_target(sync_resources ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources
+        ${CMAKE_CURRENT_BINARY_DIR}/resources
+    COMMENT "copying all resources to build directory"
+)
+
+add_dependencies(main sync_shaders sync_resources)
