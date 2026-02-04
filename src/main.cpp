@@ -128,7 +128,7 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+    glm::vec3 lightPos(1.2f, 1.4f, 2.0f);
     shader.use();
     shader.setVec3("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
     shader.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
@@ -143,6 +143,9 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         processInput(window, camera);
 
+        // lightPos.x = -0.5 + cos(glfwGetTime() * 0.5) * 1.5;
+        // lightPos.z = 1 + sin(glfwGetTime() * 0.5) * 1.5;
+        //
         shader.use();
 
         glm::mat4 view = camera->get_view_matrix();
@@ -155,6 +158,7 @@ int main()
         shader.setMat4("model", model);
 
         shader.setVec3("viewPos", camera->camera_position);
+        shader.setVec3("lightPos", lightPos);
 
         glBindVertexArray(cube_VAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
