@@ -73,7 +73,7 @@ int main()
     }
 
     glEnable(GL_DEPTH_TEST);
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
     // Getting shader ready
     Shader shader("./shaders/vertex.glsl", "./shaders/fragment.glsl");
