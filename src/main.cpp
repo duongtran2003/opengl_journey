@@ -129,10 +129,19 @@ int main()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+    glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
+
     shader.use();
-    shader.setVec3("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
-    shader.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
-    shader.setVec3("lightPos", lightPos);
+
+    shader.setVec3("material.ambient", glm::vec3(1.0f, 0.5f, 0.31f));
+    shader.setVec3("material.diffuse", glm::vec3(1.0f, 0.5f, 0.31f));
+    shader.setVec3("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
+    shader.setFloat("material.shininess", 32.0f);
+
+    shader.setVec3("light.ambient", glm::vec3(0.2f, 0.2f, 0.2f) * lightColor);
+    shader.setVec3("light.diffuse", glm::vec3(0.5f, 0.5f, 0.5f) * lightColor);
+    shader.setVec3("light.specular", glm::vec3(1.0f, 1.0f, 1.0f) * lightColor);
+    shader.setVec3("light.position", lightPos);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -167,6 +176,7 @@ int main()
         model = glm::translate(model, lightPos);
         model = glm::scale(model, glm::vec3(0.2f));
         light_shader.setMat4("model", model);
+        light_shader.setVec3("lightColor", lightColor);
 
         glBindVertexArray(light_VAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
