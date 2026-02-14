@@ -28,12 +28,13 @@ uniform Material material;
 
 void main()
 {
-    vec3 ambient = vec3(texture(material.diffuse, TexCoords)) * light.ambient;
+    vec4 diffuse_texture = texture(material.diffuse, TexCoords);
+    vec3 ambient = diffuse_texture.rgb * light.ambient;
 
     vec3 norm = normalize(Normal);
     vec3 lightDir = normalize(light.position - FragPos);
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));
+    vec3 diffuse = light.diffuse * diff * diffuse_texture.rgb;
 
     vec3 viewDir = normalize(viewPos - FragPos);
     vec3 reflectDir = reflect(-lightDir, norm);

@@ -211,7 +211,7 @@ void framebuffer_size_callback(GLFWwindow* window, int w, int h)
 
 void processInput(GLFWwindow* window, Camera* camera)
 {
-    if (glfwGetKey(window, GLFW_KEY_CAPS_LOCK) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
         glfwSetWindowShouldClose(window, true);
     }
