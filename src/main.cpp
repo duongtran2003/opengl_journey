@@ -137,14 +137,17 @@ int main()
     std::string texture_path = "../resources/textures/container2.png";
     unsigned int diffuseMap = load_texture(texture_path.c_str());
 
+    texture_path = "../resources/textures/container2_specular.png";
+    unsigned int specularMap = load_texture(texture_path.c_str());
+
     glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
     glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
 
     shader.use();
 
-    shader.setVec3("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
     shader.setFloat("material.shininess", 32.0f);
     shader.setInt("material.diffuse", 0);
+    shader.setInt("material.specular", 1);
 
     shader.setVec3("light.ambient", glm::vec3(0.2f, 0.2f, 0.2f) * lightColor);
     shader.setVec3("light.diffuse", glm::vec3(0.5f, 0.5f, 0.5f) * lightColor);
@@ -175,6 +178,8 @@ int main()
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, diffuseMap);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, specularMap);
 
         glBindVertexArray(cube_VAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
