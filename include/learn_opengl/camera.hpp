@@ -57,6 +57,7 @@ class Camera
     void process_keyboard(CameraMovement p_direction, float p_delta_time);
     void process_mouse_movement(float p_x_offset, float p_y_offset, GLboolean p_constrain_pitch = true);
     void process_mouse_scroll(float p_y_offset);
+    void reset_fov();
 
   private:
     void update_camera_vectors();

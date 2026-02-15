@@ -23,10 +23,11 @@ void framebuffer_size_callback(GLFWwindow* window, int w, int h);
 void processInput(GLFWwindow* window, Camera* camera);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xpos, double ypos);
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 unsigned int load_texture(char const* path);
 
-const int W_WIDTH = 800;
-const int W_HEIGHT = 600;
+const int W_WIDTH = 1600;
+const int W_HEIGHT = 900;
 const char* W_NAME = "Test";
 
 // MOUSE
@@ -59,6 +60,7 @@ int main()
     camera->camera_width = (float) W_WIDTH;
     camera->camera_height = (float) W_HEIGHT;
     camera->camera_position = glm::vec3(0.0f, 0.0f, 3.0f);
+    camera->fov = 90.0f;
 
     glfwSetWindowUserPointer(window, camera);
 
@@ -66,6 +68,7 @@ int main()
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
     {
@@ -140,7 +143,6 @@ int main()
     texture_path = "../resources/textures/container2_specular.png";
     unsigned int specularMap = load_texture(texture_path.c_str());
 
-    glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
     glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
 
     shader.use();
@@ -149,36 +151,26 @@ int main()
     shader.setInt("material.diffuse", 0);
     shader.setInt("material.specular", 1);
 
-    shader.setVec3("light.ambient", glm::vec3(0.2f, 0.2f, 0.2f) * lightColor);
-    shader.setVec3("light.diffuse", glm::vec3(0.5f, 0.5f, 0.5f) * lightColor);
+    shader.setVec3("light.ambient", glm::vec3(0.3f, 0.3f, 0.3f) * lightColor);
+    shader.setVec3("light.diffuse", glm::vec3(1.0f, 1.0f, 1.0f) * lightColor);
     shader.setVec3("light.specular", glm::vec3(1.0f, 1.0f, 1.0f) * lightColor);
-    shader.setVec3("light.position", lightPos);
+    shader.setFloat("light.cut_off", glm::cos(glm::radians(12.5f)));
+    shader.setFloat("light.outer_cut_off", glm::cos(glm::radians(25.0f)));
 
-    glm::vec3 light_direction = glm::vec3(1.0f, 1.0f, 1.0f);
-    shader.setVec3("light.direction", light_direction);
+    shader.setFloat("light.a", 0.032f);
+    shader.setFloat("light.b", 0.09f);
+    shader.setFloat("light.c", 1.0f);
 
-    float cube_positions[15] = {
-            // Cube 1
-            -1.32f,
-            0.45f,
-            -1.88f,
-            // Cube 2
-            1.07f,
-            -0.92f,
-            0.64f,
-            // Cube 3
-            -0.54f,
-            1.76f,
-            -0.21f,
-            // Cube 4
-            1.93f,
-            0.12f,
-            -1.15f,
-            // Cube 5
-            -0.89f,
-            -1.43f,
-            1.27f,
-    };
+    glm::vec3 cube_positions[] = {glm::vec3(0.0f, 0.0f, 0.0f),
+                                  glm::vec3(2.0f, 5.0f, -15.0f),
+                                  glm::vec3(-1.5f, -2.2f, -2.5f),
+                                  glm::vec3(-3.8f, -2.0f, -12.3f),
+                                  glm::vec3(2.4f, -0.4f, -3.5f),
+                                  glm::vec3(-1.7f, 3.0f, -7.5f),
+                                  glm::vec3(1.3f, -2.0f, -2.5f),
+                                  glm::vec3(1.5f, 2.0f, -2.5f),
+                                  glm::vec3(1.5f, 0.2f, -1.5f),
+                                  glm::vec3(-1.3f, 1.0f, -1.5f)};
 
     while (!glfwWindowShouldClose(window))
     {
@@ -199,16 +191,18 @@ int main()
 
         shader.setVec3("viewPos", camera->camera_position);
 
+        shader.setVec3("light.direction", camera->camera_direction);
+        shader.setVec3("light.position", camera->camera_position);
+
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, diffuseMap);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, specularMap);
 
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 10; i++)
         {
             glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(
-                    model, glm::vec3(cube_positions[i * 3], cube_positions[i * 3 + 1], cube_positions[i * 3 + 2]));
+            model = glm::translate(model, cube_positions[i]);
 
             float angle_in_radians = 20.0f * i;
             glm::vec3 rotation_axis = glm::vec3(1, 1, 1);
@@ -232,7 +226,7 @@ int main()
         //
         // glBindVertexArray(light_VAO);
         // glDrawArrays(GL_TRIANGLES, 0, 36);
-
+        //
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
@@ -312,6 +306,15 @@ void scroll_callback(GLFWwindow* window, double x_offset, double y_offset)
 {
     Camera* camera = static_cast<Camera*>(glfwGetWindowUserPointer(window));
     camera->process_mouse_scroll(y_offset);
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_3 && action == GLFW_PRESS)
+    {
+        Camera* camera = static_cast<Camera*>(glfwGetWindowUserPointer(window));
+        camera->reset_fov();
+    }
 }
 
 unsigned int load_texture(char const* path)
