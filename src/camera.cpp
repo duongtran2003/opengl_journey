@@ -15,7 +15,7 @@ const float DEFAULT_PITCH = 0.0f;
 const float DEFAULT_SPEED = 2.5f;
 const float DEFAULT_SENSITIVITY_X = 0.05f;
 const float DEFAULT_SENSITIVITY_Y = 0.03f;
-const float DEFAULT_FOV = 90.0f;
+const float DEFAULT_FOV = 60.0f;
 
 const float DEFAULT_CAMERA_WIDTH = 800;
 const float DEFAULT_CAMERA_HEIGHT = 600;
@@ -24,7 +24,7 @@ const float DEFAULT_CAMERA_FAR_PLANE = 100.0f;
 
 const float PITCH_MAX = 89.0f;
 const float PITCH_MIN = -89.0f;
-const float FOV_MAX = 120.0f;
+const float FOV_MAX = 90.0f;
 const float FOV_MIN = 30.0f;
 
 Camera::Camera()
