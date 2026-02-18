@@ -1,6 +1,5 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <cmath>
 #include <cstddef>
 #include <cstdlib>
 #include <glm/glm.hpp>
@@ -10,7 +9,6 @@
 #include <ostream>
 #include <stb_image.h>
 #include <string>
-#include <type_traits>
 
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_transform.hpp"

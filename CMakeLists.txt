@@ -10,6 +10,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(GLFW3_DIR "${CMAKE_SOURCE_DIR}/lib/cmake/glfw3")
 find_package(glfw3 CONFIG REQUIRED)
 
+add_library(assimp_lib SHARED IMPORTED)
+set_target_properties(assimp_lib PROPERTIES
+    IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/external/assimp/lib/libassimp.so"
+    INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/external/assimp/include"
+)
+
 set(SRC_FILES
     src/main.cpp
     src/camera.cpp
@@ -26,9 +32,10 @@ target_include_directories(main PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/external/glm
     ${CMAKE_CURRENT_SOURCE_DIR}/external/GLFW
     ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/assimp/include
 )
 
-target_link_libraries(main PRIVATE glfw)
+target_link_libraries(main PRIVATE glfw assimp_lib)
 
 if (APPLE)
     target_link_libraries(main PRIVATE "-framework OpenGL")
