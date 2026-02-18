@@ -27,9 +27,9 @@ Diagnostics:
 Completion:
   AllScopes: Yes
   ArgumentLists: FullPlaceholders
-  # "IWYU" is great but can be aggressive. "Never" if you want to insert manually.
-  HeaderInsertion: IWYU 
+  HeaderInsertion: IWYU
   CodePatterns: All
+  MacroFilter: ExactPrefix
 
 Index:
   Background: Build

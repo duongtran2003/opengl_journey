@@ -26,6 +26,14 @@ AllowAllParametersOfDeclarationOnNextLine: false
 PointerAlignment: Left
 ReferenceAlignment: Pointer
 
+# Alignment
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignCompound: false
+  PadOperators: true
+
 # Spaces
 SpaceBeforeParens: ControlStatements
 SpacesInAngles: false

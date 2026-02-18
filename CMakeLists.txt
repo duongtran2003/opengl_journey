@@ -20,6 +20,8 @@ set(SRC_FILES
     src/main.cpp
     src/camera.cpp
     src/shader.cpp
+    src/mesh.cpp
+    src/model.cpp
     external/glad/glad.c
     external/stb_image/stb_image.cpp
 )
