@@ -2,9 +2,9 @@
 
 #include "learn_opengl/mesh.hpp"
 #include "learn_opengl/shader.hpp"
-#include <material.h>
-#include <mesh.h>
-#include <scene.h>
+#include <assimp/material.h>
+#include <assimp/mesh.h>
+#include <assimp/scene.h>
 #include <string>
 #include <vector>
 
