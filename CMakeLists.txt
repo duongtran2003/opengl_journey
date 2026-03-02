@@ -13,7 +13,7 @@ find_package(glfw3 CONFIG REQUIRED)
 add_library(assimp_lib SHARED IMPORTED)
 set_target_properties(assimp_lib PROPERTIES
     IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/external/assimp/lib/libassimp.so"
-    INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/external/assimp/include"
+    INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/external/assimp"
 )
 
 set(SRC_FILES
@@ -34,7 +34,7 @@ target_include_directories(main PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/external/glm
     ${CMAKE_CURRENT_SOURCE_DIR}/external/GLFW
     ${CMAKE_CURRENT_SOURCE_DIR}/external/stb_image
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/assimp/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/assimp
 )
 
 target_link_libraries(main PRIVATE glfw assimp_lib)
