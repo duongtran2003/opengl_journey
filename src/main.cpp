@@ -10,7 +10,7 @@
 #include <stb_image.h>
 #include <string>
 
-#include "ext/matrix_transform.hpp"
+#include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/fwd.hpp"
@@ -123,6 +123,11 @@ void framebuffer_size_callback(GLFWwindow* window, int w, int h)
 void processInput(GLFWwindow* window, Camera* camera)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    {
+        glfwSetWindowShouldClose(window, true);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_CAPS_LOCK) == GLFW_PRESS)
     {
         glfwSetWindowShouldClose(window, true);
     }

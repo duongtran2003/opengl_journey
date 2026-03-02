@@ -1,0 +1,9 @@
+{
+  "dependencies": [
+    "assimp",
+    "glfw3",
+    "glm",
+    "stb",
+    "glad"
+  ]
+}

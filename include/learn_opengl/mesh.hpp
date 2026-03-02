@@ -1,8 +1,8 @@
 #pragma once
 
-#include "ext/vector_float3.hpp"
-#include "fwd.hpp"
 #include "learn_opengl/shader.hpp"
+#include <glm/ext/vector_float3.hpp>
+#include <glm/ext/vector_float2.hpp>
 #include <glm/glm.hpp>
 #include <string>
 #include <vector>
