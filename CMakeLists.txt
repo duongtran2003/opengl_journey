@@ -15,6 +15,7 @@ set(SRC_FILES
     src/shader.cpp
     src/mesh.cpp
     src/model.cpp
+    src/file_system.cpp
     external/glad/glad.c 
     external/stb_image/stb_image.cpp
 )

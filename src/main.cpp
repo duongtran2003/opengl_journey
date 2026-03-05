@@ -15,6 +15,7 @@
 #include "glm/ext/vector_float3.hpp"
 #include "glm/fwd.hpp"
 #include "learn_opengl/camera.hpp"
+#include "learn_opengl/file_system.hpp"
 #include "learn_opengl/model.hpp"
 #include "learn_opengl/shader.hpp"
 
@@ -80,7 +81,8 @@ int main()
 
     Shader shader("../shaders/vertex.glsl", "../shaders/fragment.glsl");
 
-    std::string model_path = "../resources/models/backpack/backpack.obj";
+    // std::string model_path = "../resources/models/backpack/backpack.obj";
+    std::string model_path = FileSystem("resources/models/backpack/backpack.obj").get_absolute_path();
     Model       model(model_path.c_str());
 
     while (!glfwWindowShouldClose(window))
