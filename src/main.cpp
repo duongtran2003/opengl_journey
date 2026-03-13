@@ -19,8 +19,8 @@
 #include "learn_opengl/model.hpp"
 #include "learn_opengl/shader.hpp"
 
-const int   W_WIDTH = 1600;
-const int   W_HEIGHT = 900;
+const int   W_WIDTH = 640;
+const int   W_HEIGHT = 480;
 const char* W_NAME = "Test";
 
 // MOUSE
@@ -88,8 +88,6 @@ int main()
 
     std::string model_path = file_system.get_path("resources/models/backpack/backpack.obj");
     Model       model(model_path.c_str());
-
-    return 0;
 
     while (!glfwWindowShouldClose(window))
     {
