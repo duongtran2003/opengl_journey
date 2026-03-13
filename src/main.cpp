@@ -79,11 +79,17 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
-    Shader shader("../shaders/vertex.glsl", "../shaders/fragment.glsl");
+    FileSystem file_system = FileSystem::get_instance();
+    file_system.set_root_marker("vcpkg.json");
 
-    // std::string model_path = "../resources/models/backpack/backpack.obj";
-    std::string model_path = FileSystem("resources/models/backpack/backpack.obj").get_absolute_path();
+    std::string vertex_shader_path = file_system.get_path("shaders/vertex.glsl");
+    std::string fragment_shader_path = file_system.get_path("shaders/fragment.glsl");
+    Shader      shader(vertex_shader_path.c_str(), fragment_shader_path.c_str());
+
+    std::string model_path = file_system.get_path("resources/models/backpack/backpack.obj");
     Model       model(model_path.c_str());
+
+    return 0;
 
     while (!glfwWindowShouldClose(window))
     {

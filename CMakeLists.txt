@@ -9,18 +9,29 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 
-set(SRC_FILES
-    src/main.cpp
-    src/camera.cpp
-    src/shader.cpp
-    src/mesh.cpp
-    src/model.cpp
-    src/file_system.cpp
-    external/glad/glad.c 
-    external/stb_image/stb_image.cpp
-)
+# set(SRC_FILES
+#     src/main.cpp
+#     src/camera.cpp
+#     src/shader.cpp
+#     src/mesh.cpp
+#     src/model.cpp
+#     src/file_system.cpp
+#     external/glad/glad.c 
+#     external/stb_image/stb_image.cpp
+# )
+#
+# add_executable(main ${SRC_FILES})
 
-add_executable(main ${SRC_FILES})
+file(GLOB_RECURSE sources
+        "${CMAKE_SOURCE_DIR}/src/*.c"
+        "${CMAKE_SOURCE_DIR}/src/*.cpp"
+        "${CMAKE_SOURCE_DIR}/external/*.cpp"
+        "${CMAKE_SOURCE_DIR}/external/*.c"
+        )
+
+add_definitions(-DSOME_DEFINITION)
+
+add_executable(main ${sources})
 
 target_include_directories(main PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include           
