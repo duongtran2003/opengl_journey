@@ -47,6 +47,12 @@ std::filesystem::path FileSystem::get_root_path() const
 std::filesystem::path FileSystem::get_path(const std::string path) const
 {
     std::filesystem::path p(path);
+    std::filesystem::path full_path = project_root / p;
 
-    return project_root / p;
+    if (!std::filesystem::exists(full_path))
+    {
+        std::cout << "ERROR::FILESYSTEM::PATH::PATH_NOT_FOUND\n" << full_path << std::endl;
+    }
+
+    return full_path;
 }
