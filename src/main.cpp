@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <cstddef>
@@ -32,11 +33,12 @@ bool  mouse_entered = false;
 float delta_time = 0.0f;
 float last_frame = 0.0f;
 
-void framebuffer_size_callback(GLFWwindow* window, int w, int h);
-void processInput(GLFWwindow* window, Camera* camera);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void scroll_callback(GLFWwindow* window, double xpos, double ypos);
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+void         framebuffer_size_callback(GLFWwindow* window, int w, int h);
+void         processInput(GLFWwindow* window, Camera* camera);
+void         mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void         scroll_callback(GLFWwindow* window, double xpos, double ypos);
+void         mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+unsigned int load_texture(const char* path);
 
 int main()
 {
@@ -77,17 +79,68 @@ int main()
     stbi_set_flip_vertically_on_load(true);
 
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
     FileSystem file_system = FileSystem::get_instance();
     file_system.set_root_marker("vcpkg.json");
 
-    std::string vertex_shader_path = file_system.get_path("shaders/vertex.glsl");
-    std::string fragment_shader_path = file_system.get_path("shaders/fragment.glsl");
-    Shader      shader(vertex_shader_path.c_str(), fragment_shader_path.c_str());
+    std::filesystem::path vertex_shader_path = file_system.get_path("shaders/vertex.glsl");
+    std::filesystem::path fragment_shader_path = file_system.get_path("shaders/fragment.glsl");
+    Shader                shader(vertex_shader_path.c_str(), fragment_shader_path.c_str());
 
-    std::string model_path = file_system.get_path("resources/models/backpack/backpack.obj");
-    Model       model(model_path.c_str());
+    float cube_vertices[] = {
+            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
+            0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+            -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 1.0f, -0.5f, 0.5f,  0.5f,  0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f,
+            -0.5f, 0.5f,  0.5f,  1.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 1.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  0.5f,  1.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 0.0f, 1.0f,
+            0.5f,  -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 1.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
+            0.5f,  -0.5f, 0.5f,  1.0f, 0.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+            -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, -0.5f, 0.5f,  0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f};
+
+    float plane_vertices[] = {5.0f,  -0.5f, 5.0f,  2.0f, 0.0f, -5.0f, -0.5f, 5.0f,  0.0f, 0.0f,
+                              -5.0f, -0.5f, -5.0f, 0.0f, 2.0f, 5.0f,  -0.5f, 5.0f,  2.0f, 0.0f,
+                              -5.0f, -0.5f, -5.0f, 0.0f, 2.0f, 5.0f,  -0.5f, -5.0f, 2.0f, 2.0f};
+
+    // Cube VAO
+    unsigned int cube_VAO, cube_VBO;
+    glGenVertexArrays(1, &cube_VAO);
+    glGenBuffers(1, &cube_VBO);
+    glBindVertexArray(cube_VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, cube_VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), &cube_vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) (3 * sizeof(float)));
+    glBindVertexArray(0);
+
+    // Plane VAO
+    unsigned int plane_VAO, plane_VBO;
+    glGenVertexArrays(1, &plane_VAO);
+    glGenBuffers(1, &plane_VBO);
+    glBindVertexArray(plane_VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, plane_VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(plane_vertices), &plane_vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) (3 * sizeof(float)));
+    glBindVertexArray(0);
+
+    std::filesystem::path cube_texture_path = file_system.get_path("resources/textures/marble.jpg");
+    std::filesystem::path plane_texture_path = file_system.get_path("resources/textures/metal.png");
+
+    unsigned int cube_texture = load_texture(cube_texture_path.c_str());
+    unsigned int plane_texture = load_texture(plane_texture_path.c_str());
+
+    shader.use();
+    shader.setInt("texture1", 0);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -99,6 +152,7 @@ int main()
         processInput(window, camera);
 
         shader.use();
+        glm::mat4 model = glm::mat4(1.0f);
 
         glm::mat4 view = camera->get_view_matrix();
         shader.setMat4("view", view);
@@ -106,11 +160,32 @@ int main()
         glm::mat4 projection = camera->get_projection_matrix();
         shader.setMat4("projection", projection);
 
-        glm::mat4 model_matrix = glm::mat4(1.0f);
-        model_matrix = glm::translate(model_matrix, glm::vec3(0.0f, 0.0f, 0.0f));
-        model_matrix = glm::scale(model_matrix, glm::vec3(1.0f, 1.0f, 1.0f));
-        shader.setMat4("model", model_matrix);
-        model.draw(shader);
+        // Draw cube
+        glBindVertexArray(cube_VAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, cube_texture);
+
+        // First cube
+        model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
+        shader.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        // Second cube
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
+        shader.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        // Plane
+        glBindVertexArray(plane_VAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, plane_texture);
+
+        model = glm::mat4(1.0f);
+        shader.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        glBindVertexArray(0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -202,4 +277,48 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         Camera* camera = static_cast<Camera*>(glfwGetWindowUserPointer(window));
         camera->reset_fov();
     }
+}
+
+unsigned int load_texture(const char* path)
+{
+    unsigned int texture_id;
+    glGenTextures(1, &texture_id);
+
+    int            width, height, nrComponents;
+    unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
+
+    if (data)
+    {
+        GLenum format = GL_RED;
+        if (nrComponents == 1)
+        {
+            format = GL_RED;
+        }
+        else if (nrComponents == 3)
+        {
+            format = GL_RGB;
+        }
+        else if (nrComponents == 4)
+        {
+            format = GL_RGBA;
+        }
+
+        glBindTexture(GL_TEXTURE_2D, texture_id);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Failed to load texture: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return texture_id;
 }
