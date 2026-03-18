@@ -10,12 +10,12 @@
 
 const glm::vec3 DEFAULT_CAMERA_POSITION = glm::vec3(0.0f, 0.0f, 0.0f);
 const glm::vec3 DEFAULT_WORLD_UP = glm::vec3(0.0f, 1.0f, 0.0f);
-const float DEFAULT_YAW = -90.0f;
-const float DEFAULT_PITCH = 0.0f;
-const float DEFAULT_SPEED = 2.5f;
-const float DEFAULT_SENSITIVITY_X = 0.05f;
-const float DEFAULT_SENSITIVITY_Y = 0.03f;
-const float DEFAULT_FOV = 60.0f;
+const float     DEFAULT_YAW = -90.0f;
+const float     DEFAULT_PITCH = 0.0f;
+const float     DEFAULT_SPEED = 2.5f;
+const float     DEFAULT_SENSITIVITY_X = 0.05f;
+const float     DEFAULT_SENSITIVITY_Y = 0.03f;
+const float     DEFAULT_FOV = 60.0f;
 
 const float DEFAULT_CAMERA_WIDTH = 800;
 const float DEFAULT_CAMERA_HEIGHT = 600;
@@ -50,16 +50,16 @@ Camera::Camera()
 
 Camera::Camera(const glm::vec3 p_camera_position,
                const glm::vec3 p_world_up,
-               const float p_yaw,
-               const float p_pitch,
-               const float p_fov,
-               const float p_movement_speed,
-               const float p_mouse_sensitivity_x,
-               const float p_mouse_sensitivity_y,
-               const float p_camera_width,
-               const float p_camera_height,
-               const float p_camera_near_plane,
-               const float p_camera_far_plane)
+               const float     p_yaw,
+               const float     p_pitch,
+               const float     p_fov,
+               const float     p_movement_speed,
+               const float     p_mouse_sensitivity_x,
+               const float     p_mouse_sensitivity_y,
+               const float     p_camera_width,
+               const float     p_camera_height,
+               const float     p_camera_near_plane,
+               const float     p_camera_far_plane)
 {
     camera_position = p_camera_position;
     world_up = p_world_up;
