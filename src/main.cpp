@@ -6,10 +6,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/trigonometric.hpp>
 #include <iostream>
 #include <ostream>
 #include <stb_image.h>
 #include <string>
+#include <vector>
 
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
@@ -17,7 +19,6 @@
 #include "glm/fwd.hpp"
 #include "learn_opengl/camera.hpp"
 #include "learn_opengl/file_system.hpp"
-#include "learn_opengl/model.hpp"
 #include "learn_opengl/shader.hpp"
 
 const int   W_WIDTH = 640;
@@ -81,8 +82,6 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
-    glEnable(GL_STENCIL_TEST);
-
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
     FileSystem file_system = FileSystem::get_instance();
@@ -138,13 +137,38 @@ int main()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) 0);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) (3 * sizeof(float)));
-    glBindVertexArray(0);
 
     std::filesystem::path cube_texture_path = file_system.get_path("resources/textures/marble.jpg");
     std::filesystem::path plane_texture_path = file_system.get_path("resources/textures/metal.png");
+    std::filesystem::path grass_texture_path = file_system.get_path("resources/textures/grass.png");
 
     unsigned int cube_texture = load_texture(cube_texture_path.c_str());
     unsigned int plane_texture = load_texture(plane_texture_path.c_str());
+    unsigned int grass_texture = load_texture(grass_texture_path.c_str());
+
+    std::vector<glm::vec3> vegetation_locations;
+    vegetation_locations.push_back(glm::vec3(-1.5f, 0.0f, -0.48f));
+    vegetation_locations.push_back(glm::vec3(1.5f, 0.0f, 0.51f));
+    vegetation_locations.push_back(glm::vec3(0.0f, 0.0f, 0.7f));
+    vegetation_locations.push_back(glm::vec3(-0.3f, 0.0f, -2.3f));
+    vegetation_locations.push_back(glm::vec3(0.5f, 0.0f, -0.6f));
+
+    float vegetation_vertices[] = {-0.5f, 0.5f,  0.0f, 0.0f, 1.0f, 0.5f,  0.5f,  0.0f, 1.0f, 1.0f,
+                                   0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, 0.5f,  -0.5f, 0.0f, 1.0f, 0.0f,
+                                   -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, -0.5f, 0.5f,  0.0f, 0.0f, 1.0f};
+    // Vegetation VAO
+    unsigned int vegetation_VAO, vegetation_VBO;
+    glGenVertexArrays(1, &vegetation_VAO);
+    glGenBuffers(1, &vegetation_VBO);
+    glBindVertexArray(vegetation_VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, vegetation_VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vegetation_vertices), &vegetation_vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) (3 * sizeof(float)));
+
+    glBindVertexArray(0);
 
     shader.use();
     shader.setInt("texture1", 0);
@@ -155,7 +179,7 @@ int main()
         delta_time = current_frame - last_frame;
         last_frame = current_frame;
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         processInput(window, camera);
 
@@ -188,34 +212,34 @@ int main()
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // Second cube
-
-        glEnable(GL_STENCIL_TEST);
-        glStencilFunc(GL_ALWAYS, 1, 0xFF);
-        glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
-        glStencilMask(0xFF);
-
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
         shader.setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        // Draw outline
-        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-        glStencilMask(0x00);
-        glDisable(GL_DEPTH_TEST);
+        // Draw grass
+        glBindVertexArray(vegetation_VAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, grass_texture);
+        for (auto& vegetation_location : vegetation_locations)
+        {
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, vegetation_location);
+            shader.setMat4("model", model);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        outline_shader.use();
-
-        model = glm::scale(model, glm::vec3(1.02f));
-
-        outline_shader.setMat4("view", view);
-        outline_shader.setMat4("projection", projection);
-        outline_shader.setMat4("model", model);
-
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glEnable(GL_DEPTH_TEST);
-        glDisable(GL_STENCIL_TEST);
-        glStencilMask(0xFF);
+            // model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            // shader.setMat4("model", model);
+            // glDrawArrays(GL_TRIANGLES, 0, 6);
+            //
+            // model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            // shader.setMat4("model", model);
+            // glDrawArrays(GL_TRIANGLES, 0, 6);
+            //
+            // model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            // shader.setMat4("model", model);
+            // glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
 
         glBindVertexArray(0);
 
@@ -321,26 +345,38 @@ unsigned int load_texture(const char* path)
 
     if (data)
     {
-        GLenum format = GL_RED;
+        GLenum      format = GL_RED;
+        std::string format_str = "GL_RED";
         if (nrComponents == 1)
         {
             format = GL_RED;
+            format_str = "GL_RED";
         }
         else if (nrComponents == 3)
         {
             format = GL_RGB;
+            format_str = "GL_RGB";
         }
         else if (nrComponents == 4)
         {
             format = GL_RGBA;
+            format_str = "GL_RGBA";
         }
+
+        std::cout << "Loaded " << path << " with format " << format_str << std::endl;
 
         glBindTexture(GL_TEXTURE_2D, texture_id);
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        int wrapping_mode = GL_REPEAT;
+        if (format == GL_RGBA)
+        {
+            wrapping_mode = GL_CLAMP_TO_EDGE;
+        }
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapping_mode);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapping_mode);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
