@@ -22,7 +22,7 @@ find_package(glm CONFIG REQUIRED)
 #
 # add_executable(main ${SRC_FILES})
 
-file(GLOB_RECURSE sources
+file(GLOB_RECURSE sources CONFIGURE_DEPENDS
         "${CMAKE_SOURCE_DIR}/src/*.c"
         "${CMAKE_SOURCE_DIR}/src/*.cpp"
         "${CMAKE_SOURCE_DIR}/external/*.cpp"
