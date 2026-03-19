@@ -3,11 +3,13 @@
 #include <GLFW/glfw3.h>
 #include <cstddef>
 #include <cstdlib>
+#include <glm/geometric.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/trigonometric.hpp>
 #include <iostream>
+#include <map>
 #include <ostream>
 #include <stb_image.h>
 #include <string>
@@ -21,13 +23,13 @@
 #include "learn_opengl/file_system.hpp"
 #include "learn_opengl/shader.hpp"
 
-const int   W_WIDTH = 640;
+const int   W_WIDTH  = 640;
 const int   W_HEIGHT = 480;
-const char* W_NAME = "Test";
+const char* W_NAME   = "Test";
 
 // MOUSE
-float last_mouse_X = (float) W_WIDTH / 2;
-float last_mouse_Y = (float) W_HEIGHT / 2;
+float last_mouse_X  = (float) W_WIDTH / 2;
+float last_mouse_Y  = (float) W_HEIGHT / 2;
 bool  mouse_entered = false;
 
 // DELTA TIME
@@ -58,9 +60,9 @@ int main()
     }
     glfwMakeContextCurrent(window);
 
-    Camera* camera = new Camera();
-    camera->camera_width = (float) W_WIDTH;
-    camera->camera_height = (float) W_HEIGHT;
+    Camera* camera          = new Camera();
+    camera->camera_width    = (float) W_WIDTH;
+    camera->camera_height   = (float) W_HEIGHT;
     camera->camera_position = glm::vec3(0.0f, 0.0f, 3.0f);
 
     glfwSetWindowUserPointer(window, camera);
@@ -82,36 +84,74 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
     FileSystem file_system = FileSystem::get_instance();
     file_system.set_root_marker("vcpkg.json");
 
-    std::filesystem::path vertex_shader_path = file_system.get_path("shaders/vertex.glsl");
+    std::filesystem::path vertex_shader_path   = file_system.get_path("shaders/vertex.glsl");
     std::filesystem::path fragment_shader_path = file_system.get_path("shaders/fragment.glsl");
     Shader                shader(vertex_shader_path.c_str(), fragment_shader_path.c_str());
 
-    std::filesystem::path outline_vertex_shader_path = file_system.get_path("shaders/outline_vertex.glsl");
+    std::filesystem::path outline_vertex_shader_path   = file_system.get_path("shaders/outline_vertex.glsl");
     std::filesystem::path outline_fragment_shader_path = file_system.get_path("shaders/outline_fragment.glsl");
     Shader                outline_shader(outline_vertex_shader_path.c_str(), outline_fragment_shader_path.c_str());
 
     float cube_vertices[] = {
-            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
-            0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
-            -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f, -0.5f, 0.5f,  0.5f,  0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f,
-            -0.5f, 0.5f,  0.5f,  1.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 1.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 0.0f, 1.0f,
-            0.5f,  -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 1.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
-            0.5f,  -0.5f, 0.5f,  1.0f, 0.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-            -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f, -0.5f, 0.5f,  0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f};
+            // back face
+            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, // bottom-left
+            0.5f, 0.5f, -0.5f, 1.0f, 1.0f,   // top-right
+            0.5f, -0.5f, -0.5f, 1.0f, 0.0f,  // bottom-right
+            0.5f, 0.5f, -0.5f, 1.0f, 1.0f,   // top-right
+            -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, // bottom-left
+            -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,  // top-left
+            // front face
+            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, // bottom-left
+            0.5f, -0.5f, 0.5f, 1.0f, 0.0f,  // bottom-right
+            0.5f, 0.5f, 0.5f, 1.0f, 1.0f,   // top-right
+            0.5f, 0.5f, 0.5f, 1.0f, 1.0f,   // top-right
+            -0.5f, 0.5f, 0.5f, 0.0f, 1.0f,  // top-left
+            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, // bottom-left
+            // left face
+            -0.5f, 0.5f, 0.5f, 1.0f, 0.0f,   // top-right
+            -0.5f, 0.5f, -0.5f, 1.0f, 1.0f,  // top-left
+            -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, // bottom-left
+            -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, // bottom-left
+            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,  // bottom-right
+            -0.5f, 0.5f, 0.5f, 1.0f, 0.0f,   // top-right
+            // right face
+            0.5f, 0.5f, 0.5f, 1.0f, 0.0f,   // top-left
+            0.5f, -0.5f, -0.5f, 0.0f, 1.0f, // bottom-right
+            0.5f, 0.5f, -0.5f, 1.0f, 1.0f,  // top-right
+            0.5f, -0.5f, -0.5f, 0.0f, 1.0f, // bottom-right
+            0.5f, 0.5f, 0.5f, 1.0f, 0.0f,   // top-left
+            0.5f, -0.5f, 0.5f, 0.0f, 0.0f,  // bottom-left
+            // bottom face
+            -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, // top-right
+            0.5f, -0.5f, -0.5f, 1.0f, 1.0f,  // top-left
+            0.5f, -0.5f, 0.5f, 1.0f, 0.0f,   // bottom-left
+            0.5f, -0.5f, 0.5f, 1.0f, 0.0f,   // bottom-left
+            -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,  // bottom-right
+            -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, // top-right
+            // top face
+            -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, // top-left
+            0.5f, 0.5f, 0.5f, 1.0f, 0.0f,   // bottom-right
+            0.5f, 0.5f, -0.5f, 1.0f, 1.0f,  // top-right
+            0.5f, 0.5f, 0.5f, 1.0f, 0.0f,   // bottom-right
+            -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, // top-left
+            -0.5f, 0.5f, 0.5f, 0.0f, 0.0f   // bottom-left
+    };
 
-    float plane_vertices[] = {5.0f,  -0.5001f, 5.0f,  2.0f, 0.0f, -5.0f, -0.5001f, 5.0f,  0.0f, 0.0f,
-                              -5.0f, -0.5001f, -5.0f, 0.0f, 2.0f, 5.0f,  -0.5001f, 5.0f,  2.0f, 0.0f,
-                              -5.0f, -0.5001f, -5.0f, 0.0f, 2.0f, 5.0f,  -0.5001f, -5.0f, 2.0f, 2.0f};
+    float plane_vertices[] = {
+            5.0f,  -0.5001f, 5.0f,  2.0f, 0.0f, 5.0f,  -0.5001f, -5.0f, 2.0f, 2.0f, -5.0f, -0.5001f, -5.0f, 0.0f, 2.0f,
+            -5.0f, -0.5001f, -5.0f, 0.0f, 2.0f, -5.0f, -0.5001f, 5.0f,  0.0f, 0.0f, 5.0f,  -0.5001f, 5.0f,  2.0f, 0.0f,
+    };
 
     // Cube VAO
     unsigned int cube_VAO, cube_VBO;
@@ -138,31 +178,33 @@ int main()
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) (3 * sizeof(float)));
 
-    std::filesystem::path cube_texture_path = file_system.get_path("resources/textures/marble.jpg");
-    std::filesystem::path plane_texture_path = file_system.get_path("resources/textures/metal.png");
-    std::filesystem::path grass_texture_path = file_system.get_path("resources/textures/grass.png");
+    std::filesystem::path cube_texture_path   = file_system.get_path("resources/textures/marble.jpg");
+    std::filesystem::path plane_texture_path  = file_system.get_path("resources/textures/metal.png");
+    std::filesystem::path grass_texture_path  = file_system.get_path("resources/textures/grass.png");
+    std::filesystem::path window_texture_path = file_system.get_path("resources/textures/window.png");
 
-    unsigned int cube_texture = load_texture(cube_texture_path.c_str());
-    unsigned int plane_texture = load_texture(plane_texture_path.c_str());
-    unsigned int grass_texture = load_texture(grass_texture_path.c_str());
+    unsigned int cube_texture   = load_texture(cube_texture_path.c_str());
+    unsigned int plane_texture  = load_texture(plane_texture_path.c_str());
+    unsigned int grass_texture  = load_texture(grass_texture_path.c_str());
+    unsigned int window_texture = load_texture(window_texture_path.c_str());
 
-    std::vector<glm::vec3> vegetation_locations;
-    vegetation_locations.push_back(glm::vec3(-1.5f, 0.0f, -0.48f));
-    vegetation_locations.push_back(glm::vec3(1.5f, 0.0f, 0.51f));
-    vegetation_locations.push_back(glm::vec3(0.0f, 0.0f, 0.7f));
-    vegetation_locations.push_back(glm::vec3(-0.3f, 0.0f, -2.3f));
-    vegetation_locations.push_back(glm::vec3(0.5f, 0.0f, -0.6f));
+    std::vector<glm::vec3> window_locations;
+    window_locations.push_back(glm::vec3(-1.5f, 0.0f, -0.48f));
+    window_locations.push_back(glm::vec3(1.5f, 0.0f, 0.51f));
+    window_locations.push_back(glm::vec3(0.0f, 0.0f, 0.7f));
+    window_locations.push_back(glm::vec3(-0.3f, 0.0f, -2.3f));
+    window_locations.push_back(glm::vec3(0.5f, 0.0f, -0.6f));
 
-    float vegetation_vertices[] = {-0.5f, 0.5f,  0.0f, 0.0f, 1.0f, 0.5f,  0.5f,  0.0f, 1.0f, 1.0f,
-                                   0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, 0.5f,  -0.5f, 0.0f, 1.0f, 0.0f,
-                                   -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, -0.5f, 0.5f,  0.0f, 0.0f, 1.0f};
-    // Vegetation VAO
-    unsigned int vegetation_VAO, vegetation_VBO;
-    glGenVertexArrays(1, &vegetation_VAO);
-    glGenBuffers(1, &vegetation_VBO);
-    glBindVertexArray(vegetation_VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, vegetation_VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vegetation_vertices), &vegetation_vertices, GL_STATIC_DRAW);
+    float window_vertices[] = {-0.5f, 0.5f,  0.0f, 0.0f, 1.0f, 0.5f,  0.5f,  0.0f, 1.0f, 1.0f,
+                               0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, 0.5f,  -0.5f, 0.0f, 1.0f, 0.0f,
+                               -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, -0.5f, 0.5f,  0.0f, 0.0f, 1.0f};
+    // Window VAO
+    unsigned int window_VAO, window_VBO;
+    glGenVertexArrays(1, &window_VAO);
+    glGenBuffers(1, &window_VBO);
+    glBindVertexArray(window_VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, window_VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(window_vertices), &window_vertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) 0);
     glEnableVertexAttribArray(1);
@@ -176,8 +218,8 @@ int main()
     while (!glfwWindowShouldClose(window))
     {
         float current_frame = glfwGetTime();
-        delta_time = current_frame - last_frame;
-        last_frame = current_frame;
+        delta_time          = current_frame - last_frame;
+        last_frame          = current_frame;
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -193,6 +235,7 @@ int main()
         shader.setMat4("projection", projection);
 
         // Plane
+        glDisable(GL_CULL_FACE);
         glBindVertexArray(plane_VAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, plane_texture);
@@ -202,6 +245,7 @@ int main()
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
         // Draw cube
+        glEnable(GL_CULL_FACE);
         glBindVertexArray(cube_VAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, cube_texture);
@@ -217,28 +261,25 @@ int main()
         shader.setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        // Draw grass
-        glBindVertexArray(vegetation_VAO);
+        // Draw windows
+        glDisable(GL_CULL_FACE);
+        glBindVertexArray(window_VAO);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, grass_texture);
-        for (auto& vegetation_location : vegetation_locations)
+        glBindTexture(GL_TEXTURE_2D, window_texture);
+
+        std::map<float, glm::vec3> sorted_windows;
+        for (auto& window_loc : window_locations)
+        {
+            float d           = glm::length(camera->camera_position - window_loc);
+            sorted_windows[d] = window_loc;
+        }
+
+        for (auto it = sorted_windows.rbegin(); it != sorted_windows.rend(); it++)
         {
             model = glm::mat4(1.0f);
-            model = glm::translate(model, vegetation_location);
+            model = glm::translate(model, it->second);
             shader.setMat4("model", model);
             glDrawArrays(GL_TRIANGLES, 0, 6);
-
-            // model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-            // shader.setMat4("model", model);
-            // glDrawArrays(GL_TRIANGLES, 0, 6);
-            //
-            // model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-            // shader.setMat4("model", model);
-            // glDrawArrays(GL_TRIANGLES, 0, 6);
-            //
-            // model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-            // shader.setMat4("model", model);
-            // glDrawArrays(GL_TRIANGLES, 0, 6);
         }
 
         glBindVertexArray(0);
@@ -307,8 +348,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     if (!mouse_entered)
     {
         mouse_entered = true;
-        last_mouse_X = xpos;
-        last_mouse_Y = ypos;
+        last_mouse_X  = xpos;
+        last_mouse_Y  = ypos;
     }
 
     float x_offset = xpos - last_mouse_X;
@@ -345,21 +386,21 @@ unsigned int load_texture(const char* path)
 
     if (data)
     {
-        GLenum      format = GL_RED;
+        GLenum      format     = GL_RED;
         std::string format_str = "GL_RED";
         if (nrComponents == 1)
         {
-            format = GL_RED;
+            format     = GL_RED;
             format_str = "GL_RED";
         }
         else if (nrComponents == 3)
         {
-            format = GL_RGB;
+            format     = GL_RGB;
             format_str = "GL_RGB";
         }
         else if (nrComponents == 4)
         {
-            format = GL_RGBA;
+            format     = GL_RGBA;
             format_str = "GL_RGBA";
         }
 

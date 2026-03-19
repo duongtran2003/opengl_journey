@@ -18,8 +18,9 @@ AllowShortLoopsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: InlineOnly
 
 # Function declarations & calls
-BinPackParameters: false
-BinPackArguments: false
+BinPackParameters: true
+BinPackArguments: true
+BinPackLongBracedList: true
 AllowAllParametersOfDeclarationOnNextLine: false
 
 # Pointers & references
@@ -33,6 +34,13 @@ AlignConsecutiveDeclarations:
   AcrossComments: false
   AlignCompound: false
   PadOperators: true
+
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: true
+
+SpacesInContainerLiterals: true
 
 # Spaces
 SpaceBeforeParens: ControlStatements
@@ -53,7 +61,7 @@ ConstructorInitializerIndentWidth: 4
 BreakConstructorInitializers: AfterColon
 
 # Comments
-ReflowComments: true
+ReflowComments: false
 AlignTrailingComments: true
 
 # Misc
