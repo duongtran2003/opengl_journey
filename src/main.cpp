@@ -80,6 +80,9 @@ int main()
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
+
+    glEnable(GL_STENCIL_TEST);
+
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
     FileSystem file_system = FileSystem::get_instance();
@@ -88,6 +91,10 @@ int main()
     std::filesystem::path vertex_shader_path = file_system.get_path("shaders/vertex.glsl");
     std::filesystem::path fragment_shader_path = file_system.get_path("shaders/fragment.glsl");
     Shader                shader(vertex_shader_path.c_str(), fragment_shader_path.c_str());
+
+    std::filesystem::path outline_vertex_shader_path = file_system.get_path("shaders/outline_vertex.glsl");
+    std::filesystem::path outline_fragment_shader_path = file_system.get_path("shaders/outline_fragment.glsl");
+    Shader                outline_shader(outline_vertex_shader_path.c_str(), outline_fragment_shader_path.c_str());
 
     float cube_vertices[] = {
             -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
@@ -148,7 +155,8 @@ int main()
         delta_time = current_frame - last_frame;
         last_frame = current_frame;
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
         processInput(window, camera);
 
         shader.use();
@@ -159,6 +167,15 @@ int main()
 
         glm::mat4 projection = camera->get_projection_matrix();
         shader.setMat4("projection", projection);
+
+        // Plane
+        glBindVertexArray(plane_VAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, plane_texture);
+
+        model = glm::mat4(1.0f);
+        shader.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         // Draw cube
         glBindVertexArray(cube_VAO);
@@ -171,19 +188,34 @@ int main()
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // Second cube
+
+        glEnable(GL_STENCIL_TEST);
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
+        glStencilMask(0xFF);
+
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
         shader.setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        // Plane
-        glBindVertexArray(plane_VAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, plane_texture);
+        // Draw outline
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0x00);
+        glDisable(GL_DEPTH_TEST);
 
-        model = glm::mat4(1.0f);
-        shader.setMat4("model", model);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        outline_shader.use();
+
+        model = glm::scale(model, glm::vec3(1.02f));
+
+        outline_shader.setMat4("view", view);
+        outline_shader.setMat4("projection", projection);
+        outline_shader.setMat4("model", model);
+
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_STENCIL_TEST);
+        glStencilMask(0xFF);
 
         glBindVertexArray(0);
 

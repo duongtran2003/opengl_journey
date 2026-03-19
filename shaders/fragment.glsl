@@ -1,5 +1,4 @@
 #version 330 core
-#define NR_POINT_LIGHTS 4
 
 in vec2 TexCoords;
 
