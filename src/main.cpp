@@ -42,6 +42,8 @@ void         mouse_button_callback(GLFWwindow* window, int button, int action, i
 unsigned int load_texture(const char* path);
 void         initialize_plane_VAO(unsigned int& vao);
 void         initialize_cube_VAO(unsigned int& vao);
+void         initialize_quad_VAO(unsigned int& vao);
+void         initialize_framebuffer(unsigned int& fbo, unsigned int& color_texture);
 void         draw_stuff(unsigned int& vao, Shader& shader, glm::mat4& transform_matrix, unsigned int vertices_count,
                         unsigned int texture_id);
 
@@ -95,68 +97,28 @@ int main()
     std::filesystem::path fragment_shader_path = file_system.get_path("shaders/fragment.glsl");
     Shader                shader(vertex_shader_path.c_str(), fragment_shader_path.c_str());
 
-    unsigned plane_VAO, cube_VAO;
+    std::filesystem::path quad_vertex_shader_path   = file_system.get_path("shaders/quad_vertex.glsl");
+    std::filesystem::path quad_fragment_shader_path = file_system.get_path("shaders/quad_fragment.glsl");
+    Shader                quad_shader(quad_vertex_shader_path.c_str(), quad_fragment_shader_path.c_str());
+
+    quad_shader.use();
+    quad_shader.setInt("screen_texture", 0);
+
+    shader.use();
+    shader.setInt("texture1", 0);
+
+    unsigned int plane_VAO, cube_VAO, quad_VAO;
+    unsigned int fbo, framebuffer_color_texture;
     initialize_plane_VAO(plane_VAO);
     initialize_cube_VAO(cube_VAO);
+    initialize_quad_VAO(quad_VAO);
+    initialize_framebuffer(fbo, framebuffer_color_texture);
 
-    std::filesystem::path cube_texture_path  = file_system.get_path("resources/textures/marble.jpg");
+    std::filesystem::path cube_texture_path  = file_system.get_path("resources/textures/container.jpg");
     std::filesystem::path plane_texture_path = file_system.get_path("resources/textures/metal.png");
 
     unsigned int cube_texture  = load_texture(cube_texture_path.c_str());
     unsigned int plane_texture = load_texture(plane_texture_path.c_str());
-
-    // unsigned int fbo;
-    // glGenFramebuffers(1, &fbo);
-    // glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    //
-    // unsigned int framebuffer_color_texture;
-    // glGenTextures(1, &framebuffer_color_texture);
-    // glBindTexture(GL_TEXTURE_2D, framebuffer_color_texture);
-    //
-    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, W_WIDTH, W_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    //
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //
-    // glBindTexture(GL_TEXTURE_2D, 0);
-    //
-    // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebuffer_color_texture, 0);
-    //
-    // unsigned int rbo;
-    // glGenRenderbuffers(1, &rbo);
-    // glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, W_WIDTH, W_HEIGHT);
-    // glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    //
-    // glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-    // if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-    // {
-    //     std::cout << "ERROR::FRAMEBUFFER:: Framebuffer not complete" << std::endl;
-    // }
-    // glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    //
-    // std::filesystem::path quad_vertex_shader_path   = file_system.get_path("shaders/quad_vertex.glsl");
-    // std::filesystem::path quad_fragment_shader_path = file_system.get_path("shaders/quad_fragment.glsl");
-    // Shader                quad_shader(quad_vertex_shader_path.c_str(), quad_fragment_shader_path.c_str());
-    //
-    // float quad_vertices[] = {-1.0f, 1.0f, 0.0f, 1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 1.0f, -1.0f, 1.0f, 0.0f,
-    //                          -1.0f, 1.0f, 0.0f, 1.0f, 1.0f,  -1.0f, 1.0f, 0.0f, 1.0f, 1.0f,  1.0f, 1.0f};
-    //
-    // unsigned quad_VAO, quad_VBO;
-    // glGenBuffers(1, &quad_VBO);
-    // glGenVertexArrays(1, &quad_VAO);
-    // glBindBuffer(GL_ARRAY_BUFFER, quad_VBO);
-    // glBindVertexArray(quad_VAO);
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), quad_vertices, GL_STATIC_DRAW);
-    // glEnableVertexAttribArray(0);
-    // glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*) 0);
-    // glEnableVertexAttribArray(1);
-    // glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*) (sizeof(float) * 2));
-
-    glBindVertexArray(0);
-
-    shader.use();
-    shader.setInt("texture1", 0);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -165,7 +127,8 @@ int main()
         last_frame          = current_frame;
         processInput(window, camera);
 
-        // glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
 
@@ -189,21 +152,21 @@ int main()
 
         glBindVertexArray(0);
 
-        // glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        // glClear(GL_COLOR_BUFFER_BIT);
-        //
-        // quad_shader.use();
-        // glBindVertexArray(quad_VAO);
-        // glDisable(GL_DEPTH_TEST);
-        // glBindTexture(GL_TEXTURE_2D, framebuffer_color_texture);
-        // glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glDisable(GL_DEPTH_TEST);
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        quad_shader.use();
+        glm::mat4 quad_model = glm::mat4(1.0f);
+        draw_stuff(quad_VAO, quad_shader, quad_model, 6, framebuffer_color_texture);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
     glfwTerminate();
-    free(camera);
+    delete camera;
     return 0;
 }
 
@@ -427,6 +390,7 @@ void initialize_cube_VAO(unsigned int& vao)
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) (3 * sizeof(float)));
     glBindVertexArray(0);
 }
+
 void draw_stuff(unsigned int& vao, Shader& shader, glm::mat4& transform_matrix, unsigned int vertices_count,
                 unsigned int texture_id)
 {
@@ -435,4 +399,59 @@ void draw_stuff(unsigned int& vao, Shader& shader, glm::mat4& transform_matrix, 
     glBindVertexArray(vao);
     shader.setMat4("model", transform_matrix);
     glDrawArrays(GL_TRIANGLES, 0, vertices_count);
+}
+
+void initialize_quad_VAO(unsigned int& vao)
+{
+    float quad_vertices[] = {
+            -1.0f, 1.0f,  0.0f, 1.0f, // A
+            -1.0f, -1.0f, 0.0f, 0.0f, // B
+            1.0f,  -1.0f, 1.0f, 0.0f, // C
+            -1.0f, 1.0f,  0.0f, 1.0f, // A
+            1.0f,  -1.0f, 1.0f, 0.0f, // C
+            1.0f,  1.0f,  1.0f, 1.0f  // D
+    };
+
+    unsigned int vbo;
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), &quad_vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*) 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*) (sizeof(float) * 2));
+    glBindVertexArray(0);
+}
+
+void initialize_framebuffer(unsigned int& fbo, unsigned int& color_texture)
+{
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    glGenTextures(1, &color_texture);
+    glBindTexture(GL_TEXTURE_2D, color_texture);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, W_WIDTH, W_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_texture, 0);
+
+    unsigned int rbo;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, W_WIDTH, W_HEIGHT);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer not complete" << std::endl;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
