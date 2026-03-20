@@ -103,6 +103,8 @@ int main()
 
     quad_shader.use();
     quad_shader.setInt("screen_texture", 0);
+    quad_shader.setFloat("screen_width", W_WIDTH);
+    quad_shader.setFloat("screen_height", W_HEIGHT);
 
     shader.use();
     shader.setInt("texture1", 0);
