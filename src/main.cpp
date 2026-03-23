@@ -43,7 +43,8 @@ unsigned int load_texture(const char* path);
 void         initialize_plane_VAO(unsigned int& vao);
 void         initialize_cube_VAO(unsigned int& vao);
 void         initialize_quad_VAO(unsigned int& vao);
-void         initialize_framebuffer(unsigned int& fbo, unsigned int& color_texture);
+void         initialize_framebuffer(unsigned int& fbo, unsigned int& color_texture, const int framebuffer_width,
+                                    const int framebuffer_height);
 void         draw_stuff(unsigned int& vao, Shader& shader, glm::mat4& transform_matrix, unsigned int vertices_count,
                         unsigned int texture_id);
 
@@ -114,7 +115,7 @@ int main()
     initialize_plane_VAO(plane_VAO);
     initialize_cube_VAO(cube_VAO);
     initialize_quad_VAO(quad_VAO);
-    initialize_framebuffer(fbo, framebuffer_color_texture);
+    initialize_framebuffer(fbo, framebuffer_color_texture, W_WIDTH, W_HEIGHT);
 
     std::filesystem::path cube_texture_path  = file_system.get_path("resources/textures/container.jpg");
     std::filesystem::path plane_texture_path = file_system.get_path("resources/textures/metal.png");
@@ -427,7 +428,8 @@ void initialize_quad_VAO(unsigned int& vao)
     glBindVertexArray(0);
 }
 
-void initialize_framebuffer(unsigned int& fbo, unsigned int& color_texture)
+void initialize_framebuffer(unsigned int& fbo, unsigned int& color_texture, const int framebuffer_width,
+                            const int framebuffer_height)
 {
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -435,7 +437,7 @@ void initialize_framebuffer(unsigned int& fbo, unsigned int& color_texture)
     glGenTextures(1, &color_texture);
     glBindTexture(GL_TEXTURE_2D, color_texture);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, W_WIDTH, W_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, framebuffer_width, framebuffer_width, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -447,7 +449,7 @@ void initialize_framebuffer(unsigned int& fbo, unsigned int& color_texture)
     unsigned int rbo;
     glGenRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, W_WIDTH, W_HEIGHT);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, framebuffer_width, framebuffer_height);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
