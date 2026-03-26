@@ -43,6 +43,7 @@ unsigned int load_texture(const char* path);
 void         initialize_plane_VAO(unsigned int& vao);
 void         initialize_cube_VAO(unsigned int& vao);
 void         initialize_quad_VAO(unsigned int& vao);
+void         initialize_mirror_VAO(unsigned int& vao);
 void         initialize_framebuffer(unsigned int& fbo, unsigned int& color_texture, const int framebuffer_width,
                                     const int framebuffer_height);
 void         draw_stuff(unsigned int& vao, Shader& shader, glm::mat4& transform_matrix, unsigned int vertices_count,
@@ -102,20 +103,40 @@ int main()
     std::filesystem::path quad_fragment_shader_path = file_system.get_path("shaders/quad_fragment.glsl");
     Shader                quad_shader(quad_vertex_shader_path.c_str(), quad_fragment_shader_path.c_str());
 
+    std::filesystem::path mirror_vertex_shader_path   = file_system.get_path("shaders/mirror_vertex.glsl");
+    std::filesystem::path mirror_fragment_shader_path = file_system.get_path("shaders/mirror_fragment.glsl");
+    Shader                mirror_shader(mirror_vertex_shader_path.c_str(), mirror_fragment_shader_path.c_str());
+
     quad_shader.use();
     quad_shader.setInt("screen_texture", 0);
     quad_shader.setFloat("screen_width", W_WIDTH);
     quad_shader.setFloat("screen_height", W_HEIGHT);
 
+    mirror_shader.use();
+    mirror_shader.setInt("screen_texture", 0);
+
     shader.use();
     shader.setInt("texture1", 0);
 
-    unsigned int plane_VAO, cube_VAO, quad_VAO;
-    unsigned int fbo, framebuffer_color_texture;
+    unsigned int plane_VAO, cube_VAO, quad_VAO, mirror_VAO;
+    unsigned int fbo, framebuffer_color_texture, rear_view_fbo, rearview_framebuffer_color_texture;
     initialize_plane_VAO(plane_VAO);
     initialize_cube_VAO(cube_VAO);
     initialize_quad_VAO(quad_VAO);
+    initialize_mirror_VAO(mirror_VAO);
     initialize_framebuffer(fbo, framebuffer_color_texture, W_WIDTH, W_HEIGHT);
+
+    const int rear_view_width  = W_WIDTH * 0.5f;
+    const int rear_view_height = W_HEIGHT * 0.125f;
+    initialize_framebuffer(rear_view_fbo, rearview_framebuffer_color_texture, rear_view_width, rear_view_height);
+
+    Camera* rear_view          = new Camera();
+    rear_view->camera_width    = (float) rear_view_width;
+    rear_view->camera_height   = (float) rear_view_height;
+    rear_view->camera_position = glm::vec3(0.0f, 0.0f, 3.0f);
+    rear_view->fov             = 15.0f;
+
+    std::cout << rear_view->camera_width << " " << rear_view->camera_height << std::endl;
 
     std::filesystem::path cube_texture_path  = file_system.get_path("resources/textures/container.jpg");
     std::filesystem::path plane_texture_path = file_system.get_path("resources/textures/metal.png");
@@ -132,9 +153,11 @@ int main()
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glViewport(0, 0, camera->camera_width, camera->camera_height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
 
+        // Draw front view
         shader.use();
         glm::mat4 view = camera->get_view_matrix();
         shader.setMat4("view", view);
@@ -153,6 +176,31 @@ int main()
         cube_model_matrix = glm::translate(cube_model_matrix, glm::vec3(2.0f, 0.0f, 0.0f));
         draw_stuff(cube_VAO, shader, cube_model_matrix, 36, cube_texture);
 
+        // Draw rear view
+        glBindFramebuffer(GL_FRAMEBUFFER, rear_view_fbo);
+        glViewport(0, 0, rear_view->camera_width, rear_view->camera_height);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        shader.use();
+        rear_view->camera_direction = camera->camera_direction * -1.0f;
+        rear_view->camera_position  = camera->camera_position;
+        view                        = rear_view->get_view_matrix();
+        shader.setMat4("view", view);
+
+        projection = rear_view->get_projection_matrix();
+        shader.setMat4("projection", projection);
+
+        plane_model_matrix = glm::mat4(1.0f);
+        draw_stuff(plane_VAO, shader, plane_model_matrix, 6, plane_texture);
+
+        cube_model_matrix = glm::mat4(1.0f);
+        cube_model_matrix = glm::translate(cube_model_matrix, glm::vec3(-1.0f, 0.0f, -1.0f));
+        draw_stuff(cube_VAO, shader, cube_model_matrix, 36, cube_texture);
+
+        cube_model_matrix = glm::mat4(1.0f);
+        cube_model_matrix = glm::translate(cube_model_matrix, glm::vec3(2.0f, 0.0f, 0.0f));
+        draw_stuff(cube_VAO, shader, cube_model_matrix, 36, cube_texture);
+
         glBindVertexArray(0);
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -160,9 +208,14 @@ int main()
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        glm::mat4 const_model = glm::mat4(1.0f);
+
+        glViewport(0, 0, camera->camera_width, camera->camera_height);
         quad_shader.use();
-        glm::mat4 quad_model = glm::mat4(1.0f);
-        draw_stuff(quad_VAO, quad_shader, quad_model, 6, framebuffer_color_texture);
+        draw_stuff(quad_VAO, quad_shader, const_model, 6, framebuffer_color_texture);
+
+        mirror_shader.use();
+        draw_stuff(mirror_VAO, quad_shader, const_model, 6, rearview_framebuffer_color_texture);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -428,6 +481,30 @@ void initialize_quad_VAO(unsigned int& vao)
     glBindVertexArray(0);
 }
 
+void initialize_mirror_VAO(unsigned int& vao)
+{
+    float quad_vertices[] = {
+            -0.5f, 0.875f, 0.0f, 1.0f, // A
+            -0.5f, 0.625f, 0.0f, 0.0f, // B
+            0.5f,  0.625f, 1.0f, 0.0f, // C
+            -0.5f, 0.875f, 0.0f, 1.0f, // A
+            0.5f,  0.625f, 1.0f, 0.0f, // C
+            0.5f,  0.875f, 1.0f, 1.0f  // D
+    };
+
+    unsigned int vbo;
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), &quad_vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*) 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*) (sizeof(float) * 2));
+    glBindVertexArray(0);
+}
+
 void initialize_framebuffer(unsigned int& fbo, unsigned int& color_texture, const int framebuffer_width,
                             const int framebuffer_height)
 {
@@ -437,7 +514,7 @@ void initialize_framebuffer(unsigned int& fbo, unsigned int& color_texture, cons
     glGenTextures(1, &color_texture);
     glBindTexture(GL_TEXTURE_2D, color_texture);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, framebuffer_width, framebuffer_width, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, framebuffer_width, framebuffer_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
