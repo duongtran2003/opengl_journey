@@ -12,6 +12,7 @@
 #include <ostream>
 #include <stb_image.h>
 #include <string>
+#include <vector>
 
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
@@ -42,12 +43,9 @@ void         mouse_button_callback(GLFWwindow* window, int button, int action, i
 unsigned int load_texture(const char* path);
 void         initialize_plane_VAO(unsigned int& vao);
 void         initialize_cube_VAO(unsigned int& vao);
-void         initialize_quad_VAO(unsigned int& vao);
-void         initialize_mirror_VAO(unsigned int& vao);
-void         initialize_framebuffer(unsigned int& fbo, unsigned int& color_texture, const int framebuffer_width,
-                                    const int framebuffer_height);
 void         draw_stuff(unsigned int& vao, Shader& shader, glm::mat4& transform_matrix, unsigned int vertices_count,
-                        unsigned int texture_id);
+                        unsigned int texture_id, GLenum texture_target);
+unsigned int load_cubemap(std::vector<std::filesystem::path> faces);
 
 int main()
 {
@@ -88,7 +86,7 @@ int main()
     stbi_set_flip_vertically_on_load(true);
 
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
+    glDepthFunc(GL_LEQUAL);
 
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
@@ -99,50 +97,34 @@ int main()
     std::filesystem::path fragment_shader_path = file_system.get_path("shaders/fragment.glsl");
     Shader                shader(vertex_shader_path.c_str(), fragment_shader_path.c_str());
 
-    std::filesystem::path quad_vertex_shader_path   = file_system.get_path("shaders/quad_vertex.glsl");
-    std::filesystem::path quad_fragment_shader_path = file_system.get_path("shaders/quad_fragment.glsl");
-    Shader                quad_shader(quad_vertex_shader_path.c_str(), quad_fragment_shader_path.c_str());
-
-    std::filesystem::path mirror_vertex_shader_path   = file_system.get_path("shaders/mirror_vertex.glsl");
-    std::filesystem::path mirror_fragment_shader_path = file_system.get_path("shaders/mirror_fragment.glsl");
-    Shader                mirror_shader(mirror_vertex_shader_path.c_str(), mirror_fragment_shader_path.c_str());
-
-    quad_shader.use();
-    quad_shader.setInt("screen_texture", 0);
-    quad_shader.setFloat("screen_width", W_WIDTH);
-    quad_shader.setFloat("screen_height", W_HEIGHT);
-
-    mirror_shader.use();
-    mirror_shader.setInt("screen_texture", 0);
+    std::filesystem::path skybox_vertex_shader_path   = file_system.get_path("shaders/skybox_vertex.glsl");
+    std::filesystem::path skybox_fragment_shader_path = file_system.get_path("shaders/skybox_fragment.glsl");
+    Shader                skybox_shader(skybox_vertex_shader_path.c_str(), skybox_fragment_shader_path.c_str());
 
     shader.use();
     shader.setInt("texture1", 0);
 
-    unsigned int plane_VAO, cube_VAO, quad_VAO, mirror_VAO;
-    unsigned int fbo, framebuffer_color_texture, rear_view_fbo, rearview_framebuffer_color_texture;
+    skybox_shader.use();
+    skybox_shader.setInt("skybox_texture", 0);
+
+    unsigned int plane_VAO, cube_VAO;
     initialize_plane_VAO(plane_VAO);
     initialize_cube_VAO(cube_VAO);
-    initialize_quad_VAO(quad_VAO);
-    initialize_mirror_VAO(mirror_VAO);
-    initialize_framebuffer(fbo, framebuffer_color_texture, W_WIDTH, W_HEIGHT);
 
-    const int rear_view_width  = W_WIDTH * 0.5f;
-    const int rear_view_height = W_HEIGHT * 0.125f;
-    initialize_framebuffer(rear_view_fbo, rearview_framebuffer_color_texture, rear_view_width, rear_view_height);
+    std::filesystem::path              cube_texture_path  = file_system.get_path("resources/textures/container.jpg");
+    std::filesystem::path              plane_texture_path = file_system.get_path("resources/textures/metal.png");
+    std::vector<std::filesystem::path> skybox_textures    = {
+            file_system.get_path("resources/textures/skybox/right.jpg"),
+            file_system.get_path("resources/textures/skybox/left.jpg"),
+            file_system.get_path("resources/textures/skybox/top.jpg"),
+            file_system.get_path("resources/textures/skybox/bottom.jpg"),
+            file_system.get_path("resources/textures/skybox/front.jpg"),
+            file_system.get_path("resources/textures/skybox/back.jpg"),
+    };
 
-    Camera* rear_view          = new Camera();
-    rear_view->camera_width    = (float) rear_view_width;
-    rear_view->camera_height   = (float) rear_view_height;
-    rear_view->camera_position = glm::vec3(0.0f, 0.0f, 3.0f);
-    rear_view->fov             = 15.0f;
-
-    std::cout << rear_view->camera_width << " " << rear_view->camera_height << std::endl;
-
-    std::filesystem::path cube_texture_path  = file_system.get_path("resources/textures/container.jpg");
-    std::filesystem::path plane_texture_path = file_system.get_path("resources/textures/metal.png");
-
-    unsigned int cube_texture  = load_texture(cube_texture_path.c_str());
-    unsigned int plane_texture = load_texture(plane_texture_path.c_str());
+    unsigned int cube_texture   = load_texture(cube_texture_path.c_str());
+    unsigned int plane_texture  = load_texture(plane_texture_path.c_str());
+    unsigned int skybox_texture = load_cubemap(skybox_textures);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -152,70 +134,38 @@ int main()
         processInput(window, camera);
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glViewport(0, 0, camera->camera_width, camera->camera_height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
 
-        // Draw front view
-        shader.use();
-        glm::mat4 view = camera->get_view_matrix();
-        shader.setMat4("view", view);
-
+        glm::mat4 view       = camera->get_view_matrix();
         glm::mat4 projection = camera->get_projection_matrix();
+
+        shader.use();
+        shader.setMat4("view", view);
         shader.setMat4("projection", projection);
 
         glm::mat4 plane_model_matrix = glm::mat4(1.0f);
-        draw_stuff(plane_VAO, shader, plane_model_matrix, 6, plane_texture);
+        draw_stuff(plane_VAO, shader, plane_model_matrix, 6, plane_texture, GL_TEXTURE_2D);
 
         glm::mat4 cube_model_matrix = glm::mat4(1.0f);
         cube_model_matrix           = glm::translate(cube_model_matrix, glm::vec3(-1.0f, 0.0f, -1.0f));
-        draw_stuff(cube_VAO, shader, cube_model_matrix, 36, cube_texture);
+        draw_stuff(cube_VAO, shader, cube_model_matrix, 36, cube_texture, GL_TEXTURE_2D);
 
         cube_model_matrix = glm::mat4(1.0f);
         cube_model_matrix = glm::translate(cube_model_matrix, glm::vec3(2.0f, 0.0f, 0.0f));
-        draw_stuff(cube_VAO, shader, cube_model_matrix, 36, cube_texture);
+        draw_stuff(cube_VAO, shader, cube_model_matrix, 36, cube_texture, GL_TEXTURE_2D);
 
-        // Draw rear view
-        glBindFramebuffer(GL_FRAMEBUFFER, rear_view_fbo);
-        glViewport(0, 0, rear_view->camera_width, rear_view->camera_height);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        shader.use();
-        rear_view->camera_direction = camera->camera_direction * -1.0f;
-        rear_view->camera_position  = camera->camera_position;
-        view                        = rear_view->get_view_matrix();
-        shader.setMat4("view", view);
-
-        projection = rear_view->get_projection_matrix();
-        shader.setMat4("projection", projection);
-
-        plane_model_matrix = glm::mat4(1.0f);
-        draw_stuff(plane_VAO, shader, plane_model_matrix, 6, plane_texture);
-
-        cube_model_matrix = glm::mat4(1.0f);
-        cube_model_matrix = glm::translate(cube_model_matrix, glm::vec3(-1.0f, 0.0f, -1.0f));
-        draw_stuff(cube_VAO, shader, cube_model_matrix, 36, cube_texture);
-
-        cube_model_matrix = glm::mat4(1.0f);
-        cube_model_matrix = glm::translate(cube_model_matrix, glm::vec3(2.0f, 0.0f, 0.0f));
-        draw_stuff(cube_VAO, shader, cube_model_matrix, 36, cube_texture);
+        glDepthMask(false);
+        skybox_shader.use();
+        glm::mat4 skybox_view = glm::mat4(glm::mat3(view));
+        skybox_shader.setMat4("view", skybox_view);
+        skybox_shader.setMat4("projection", projection);
+        glm::mat4 skybox_model_matrix = glm::mat4(1.0f);
+        draw_stuff(cube_VAO, skybox_shader, skybox_model_matrix, 36, skybox_texture, GL_TEXTURE_CUBE_MAP);
+        glDepthMask(true);
 
         glBindVertexArray(0);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glDisable(GL_DEPTH_TEST);
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        glm::mat4 const_model = glm::mat4(1.0f);
-
-        glViewport(0, 0, camera->camera_width, camera->camera_height);
-        quad_shader.use();
-        draw_stuff(quad_VAO, quad_shader, const_model, 6, framebuffer_color_texture);
-
-        mirror_shader.use();
-        draw_stuff(mirror_VAO, quad_shader, const_model, 6, rearview_framebuffer_color_texture);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -448,91 +398,47 @@ void initialize_cube_VAO(unsigned int& vao)
 }
 
 void draw_stuff(unsigned int& vao, Shader& shader, glm::mat4& transform_matrix, unsigned int vertices_count,
-                unsigned int texture_id)
+                unsigned int texture_id, GLenum texture_target)
 {
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glBindTexture(texture_target, texture_id);
     glBindVertexArray(vao);
     shader.setMat4("model", transform_matrix);
     glDrawArrays(GL_TRIANGLES, 0, vertices_count);
 }
 
-void initialize_quad_VAO(unsigned int& vao)
+unsigned int load_cubemap(std::vector<std::filesystem::path> faces)
 {
-    float quad_vertices[] = {
-            -1.0f, 1.0f,  0.0f, 1.0f, // A
-            -1.0f, -1.0f, 0.0f, 0.0f, // B
-            1.0f,  -1.0f, 1.0f, 0.0f, // C
-            -1.0f, 1.0f,  0.0f, 1.0f, // A
-            1.0f,  -1.0f, 1.0f, 0.0f, // C
-            1.0f,  1.0f,  1.0f, 1.0f  // D
-    };
+    stbi_set_flip_vertically_on_load(false);
 
-    unsigned int vbo;
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), &quad_vertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*) 0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*) (sizeof(float) * 2));
-    glBindVertexArray(0);
-}
+    unsigned int texture_id;
+    glGenTextures(1, &texture_id);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
 
-void initialize_mirror_VAO(unsigned int& vao)
-{
-    float quad_vertices[] = {
-            -0.5f, 0.875f, 0.0f, 1.0f, // A
-            -0.5f, 0.625f, 0.0f, 0.0f, // B
-            0.5f,  0.625f, 1.0f, 0.0f, // C
-            -0.5f, 0.875f, 0.0f, 1.0f, // A
-            0.5f,  0.625f, 1.0f, 0.0f, // C
-            0.5f,  0.875f, 1.0f, 1.0f  // D
-    };
-
-    unsigned int vbo;
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), &quad_vertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*) 0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*) (sizeof(float) * 2));
-    glBindVertexArray(0);
-}
-
-void initialize_framebuffer(unsigned int& fbo, unsigned int& color_texture, const int framebuffer_width,
-                            const int framebuffer_height)
-{
-    glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-
-    glGenTextures(1, &color_texture);
-    glBindTexture(GL_TEXTURE_2D, color_texture);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, framebuffer_width, framebuffer_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_texture, 0);
-
-    unsigned int rbo;
-    glGenRenderbuffers(1, &rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, framebuffer_width, framebuffer_height);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    int width, height, nr_channels;
+    for (unsigned int i = 0; i < faces.size(); i++)
     {
-        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer not complete" << std::endl;
+        unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nr_channels, 0);
+
+        if (data)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE,
+                         data);
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Failed to load cubemap at path: " << faces[i].string() << std::endl;
+            stbi_image_free(data);
+        }
     }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    stbi_set_flip_vertically_on_load(true);
+    return texture_id;
 }
